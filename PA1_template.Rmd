@@ -1,25 +1,131 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Peer Assignment Week 2"
+author: "Nate Foulkes"
+date: "8/1/2021"
+output: html_document
 ---
 
-
-## Loading and preprocessing the data
-
-
+## Loading and pre-processing the data
+```{r setup, echo=TRUE}
+library(dplyr)
+library(ggplot2)
+if(!file.exists("data")){
+        dir.create("data")
+}
+url1 <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+download.file(url1, destfile = "./data/df1.zip")
+unzip(zipfile = "./data/df1.zip")
+activity <- read.csv("./activity.csv",stringsAsFactors=TRUE, na.strings = "NA")
+good <- complete.cases(activity)
+no_NA_data <- activity[good,]
+activity$date <- as.POSIXlt(activity$date)
+```
 
 ## What is mean total number of steps taken per day?
+```{r, echo=TRUE}
+daily_steps <- no_NA_data %>% 
+        group_by(date) %>% 
+        summarise(TotalSteps = sum(steps))
+mean_steps <- mean(daily_steps$TotalSteps)
+median_steps <- median(daily_steps$TotalSteps)
+```
+### Histogram of the daily steps
+```{r, echo=TRUE}
+hist(daily_steps$TotalSteps , 
+     breaks = 10, 
+     col = "lightblue", 
+     main = "Total Daily Steps", 
+     xlab = "steps")
+```
+### The mean and median number of daily steps
+```{r, echo=TRUE}
+mean_steps_1 <- mean(daily_steps$TotalSteps)
+median_steps_1 <- median(daily_steps$TotalSteps)
+```
+The mean number of steps `r mean_steps_1`. 
+The median number of steps `r median_steps_1`.
 
+# What is the average daily activity pattern?
+```{r, echo=TRUE}
+avg_step_interval <- no_NA_data %>% group_by(interval) %>% summarise(avgSteps = mean(steps))
+plot(avg_step_interval,
+     type = "l",
+     col = "blue",
+     main = "Average Steps by 5-minute Interval",
+     ylab = "Average Steps",
+     xlab = "Interval")
+Five_min_interval <- avg_step_interval$interval[[grep(max(avg_step_interval$avgSteps),avg_step_interval$avgSteps)]]
 
+```
+At `r Five_min_interval` is the interval of the maximum number of daily steps.
 
-## What is the average daily activity pattern?
+# Imputing missing values
+```{r, echo=TRUE}
+my_NAs <- colSums(is.na(activity))
+```
+The number of rows with NAs is
+`r my_NAs`
 
+## Fill in the NA values
+### The NA values will be replaced by the mean of that 5-minute interval
+```{r, echo=TRUE}
+interval_mean <- no_NA_data %>% 
+        group_by(interval) %>% 
+        summarise(mean = mean(steps))
 
+my_merge <- merge(activity, interval_mean, by = "interval")
 
-## Imputing missing values
+```
+### New data set with the NA values replaced
+```{r, echo=TRUE}
+clean_data <- within(my_merge, steps[is.na(steps)] <- mean[is.na(steps)])
 
+plotting_data <- clean_data %>% 
+        group_by(date) %>% 
+        summarise(TotalSteps = sum(steps))
 
+```
 
-## Are there differences in activity patterns between weekdays and weekends?
+### Histogram of the daily steps
+```{r, echo=TRUE}
+hist(plotting_data$TotalSteps , 
+     breaks = 10, 
+     col = "light pink", 
+     main = "Total Daily Steps", 
+     xlab = "steps")
+```
+
+### The mean and median number of steps
+```{r, echo=TRUE}
+mean_steps_2 <- mean(plotting_data$TotalSteps)
+median_steps_2 <- median(plotting_data$TotalSteps)
+```
+
+The mean number of steps `r mean_steps_2`.
+The median number of steps `r median_steps_2`.
+
+# Are there difference in activity patterns between weekdays and weekends?
+
+## Create a new factor variable for weekdays and weekends
+```{r, echo=TRUE}
+DoW_df <- mutate(clean_data, day_of_the_week = weekdays(date))
+
+weekend <- c("Saturday", "Sunday")
+
+weekend_df <- DoW_df[DoW_df$day_of_the_week %in% weekend,] %>% 
+        group_by(interval) %>% 
+        summarise(Avg_step = mean(steps))
+
+weekday <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+
+weekday_df <- DoW_df[DoW_df$day_of_the_week %in% weekday,] %>% 
+        group_by(interval) %>% 
+        summarise(Avg_step = mean(steps))
+```
+
+## A panel plot to display the time series difference between weekday and weekend
+```{r, echo=TRUE}
+par(mfrow = c(2,1))
+plot(weekday_df, type = "l", main = "Weekday", col = "blue")
+plot(weekend_df, type = "l", main = "Weekend", col = "green")
+```
