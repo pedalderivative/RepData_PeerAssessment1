@@ -31,11 +31,13 @@ median_steps <- median(daily_steps$TotalSteps)
 ```
 ### Histogram of the daily steps
 ```{r, echo=TRUE}
+png("plot_1.png")
 hist(daily_steps$TotalSteps , 
      breaks = 10, 
      col = "lightblue", 
      main = "Total Daily Steps", 
      xlab = "steps")
+dev.off()
 ```
 ### The mean and median number of daily steps
 ```{r, echo=TRUE}
@@ -48,6 +50,7 @@ The median number of steps `r median_steps_1`.
 # What is the average daily activity pattern?
 ```{r, echo=TRUE}
 avg_step_interval <- no_NA_data %>% group_by(interval) %>% summarise(avgSteps = mean(steps))
+png("plot_2.png")
 plot(avg_step_interval,
      type = "l",
      col = "blue",
@@ -55,7 +58,7 @@ plot(avg_step_interval,
      ylab = "Average Steps",
      xlab = "Interval")
 Five_min_interval <- avg_step_interval$interval[[grep(max(avg_step_interval$avgSteps),avg_step_interval$avgSteps)]]
-
+dev.off()
 ```
 At `r Five_min_interval` is the interval of the maximum number of daily steps.
 
@@ -88,11 +91,13 @@ plotting_data <- clean_data %>%
 
 ### Histogram of the daily steps
 ```{r, echo=TRUE}
+png("plot_3.png")
 hist(plotting_data$TotalSteps , 
      breaks = 10, 
      col = "light pink", 
      main = "Total Daily Steps", 
      xlab = "steps")
+dev.off()
 ```
 
 ### The mean and median number of steps
